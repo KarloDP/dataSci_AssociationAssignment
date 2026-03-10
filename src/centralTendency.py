@@ -11,3 +11,6 @@ for col in df.columns:
     # Count how many times 1 appears in the column
     count_ones = (df[col] == 1).sum()
     print(f"{col}: {count_ones}")
+
+
+    """new comment"""
