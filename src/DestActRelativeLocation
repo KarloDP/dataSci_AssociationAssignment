@@ -1,0 +1,394 @@
+# Author: Raymundo Manuel III
+# Task:   Destination vs Activities
+# Budget, Activities, Origin, and Destination
+ 	
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+
+class DestActRelativeLocation:
+    def __init__(self, csv_path: str):
+        self.csv_path = Path(csv_path)
+        self.df = None
+        self.results = {}
+
+
+        self.budget_cols = ['budget_min', 'budget_max']
+
+
+        self.region_col = 'home_address:_region'
+
+
+        self.destination_cols = [
+            'what_specific_phillippine_tourist_destination_do_you_prefer_alona_beach,_panglao,_bohol',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_banaue_rice_terraces,_ifugao',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_bantayan_island,_cebu',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_boracay_island,_aklan',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_calle_crisologo,_vigan_city',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_chocolate_hills,_bohol',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_cloud_9,_siargao_island',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_el_nido,_palawan',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_hinatuan_enchanted_river,_surigao_del_sur',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_hundred_islands,_pangasinan',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_intramuros,_manila',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_kawasan_falls,_cebu',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_kayangan_lake,_coron,_palawan',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_magellan\'s_cross,_cebu',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_mayon_volcano,_bicol',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_mount_pinatubo,_zambales',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_paoay_sand_dunes,_ilocos_norte',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_pink_beach,_santa_cruz_island,_zamboanga_city',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_puerto_princesa_subterranean_river_national_park_,_palawan',
+            'what_specific_phillippine_tourist_destination_do_you_prefer_rizal_park_and_shrine,_dapitan_city'
+        ]
+
+        self.activity_cols = [
+            'what_activities_are_you_most_interested_in_during_your_trip_adventure_sports',
+            'what_activities_are_you_most_interested_in_during_your_trip_attending_festivals_and_cultural_events',
+            'what_activities_are_you_most_interested_in_during_your_trip_eating_local_food',
+            'what_activities_are_you_most_interested_in_during_your_trip_hiking_or_trekking',
+            'what_activities_are_you_most_interested_in_during_your_trip_hook_up_with_gorgeous_ladies,_perhaps.',
+            'what_activities_are_you_most_interested_in_during_your_trip_shopping',
+            'what_activities_are_you_most_interested_in_during_your_trip_stargazing',
+            'what_activities_are_you_most_interested_in_during_your_trip_swimming,_scuba_diving,_etc.',
+            'what_activities_are_you_most_interested_in_during_your_trip_visiting_historical_sites_or_landmarks',
+            'what_activities_are_you_most_interested_in_during_your_trip_wildlife_spotting_or_zoo_experiences'
+        ]
+
+    def __call__(self):
+        self.load_data()
+        self.clean_data()
+        self.analyze_budgets()
+        self.analyze_regions()
+        self.analyze_destinations()
+        self.analyze_activities()
+        return self.results
+
+    def load_data(self):
+        self.df = pd.read_csv(self.csv_path)
+
+    def clean_data(self):
+        """Clean and prepare data for analysis"""
+        # Clean budget columns - replace empty strings with NaN and convert to numeric
+        for col in self.budget_cols:
+            if col in self.df.columns:
+                self.df[col] = pd.to_numeric(self.df[col].replace('', np.nan), errors='coerce')
+
+        # Clean region column - strip whitespace and handle missing values
+        if self.region_col in self.df.columns:
+            self.df[self.region_col] = self.df[self.region_col].fillna('Not Specified').str.strip()
+
+    class ColumnRelativeLocation:
+        def __init__(self, series: pd.Series, column_name: str):
+            if not pd.api.types.is_numeric_dtype(series):
+                raise ValueError(
+                    f"'{series.name}' is not numeric. Cannot calculate relative location metrics."
+                )
+
+            clean = series.dropna()
+
+            if len(clean) == 0:
+                raise ValueError(f"No valid numeric data in column '{series.name}'")
+
+            self.column_name = column_name
+            self.count = len(clean)
+            self.mean = np.mean(clean)
+            self.std = np.std(clean)
+            self.min = np.min(clean)
+            self.max = np.max(clean)
+            self.percentile_25 = np.percentile(clean, 25)
+            self.percentile_50 = np.percentile(clean, 50)
+            self.percentile_75 = np.percentile(clean, 75)
+
+            self.deciles = {i: np.percentile(clean, i * 10) for i in range(1, 10)}
+
+            self.quartile_1 = self.percentile_25
+            self.quartile_2 = self.percentile_50
+            self.quartile_3 = self.percentile_75
+            self.interquartile_range = self.quartile_3 - self.quartile_1
+
+        def __repr__(self):
+            return (
+                f"  Count: {self.count}\n"
+                f"  Mean: ₱{self.mean:,.2f}\n"
+                f"  Std Dev: ₱{self.std:,.2f}\n"
+                f"  Min: ₱{self.min:,.2f}\n"
+                f"  Max: ₱{self.max:,.2f}\n"
+                f"  25th Percentile: ₱{self.percentile_25:,.2f}\n"
+                f"  50th Percentile (Median): ₱{self.percentile_50:,.2f}\n"
+                f"  75th Percentile: ₱{self.percentile_75:,.2f}\n"
+                f"  Deciles: {', '.join([f'D{k}: ₱{v:,.2f}' for k, v in self.deciles.items()])}\n"
+                f"  Q1: ₱{self.quartile_1:,.2f}\n"
+                f"  Q2 (Median): ₱{self.percentile_50:,.2f}\n"
+                f"  Q3: ₱{self.quartile_3:,.2f}\n"
+                f"  IQR: ₱{self.interquartile_range:,.2f}"
+            )
+
+    class RegionAnalysis:
+        def __init__(self, series: pd.Series):
+            self.column_name = series.name
+            self.total_responses = len(series)
+            self.unique_regions = series.nunique()
+
+            # Get value counts and percentages
+            self.region_counts = series.value_counts()
+            self.region_percentages = (self.region_counts / self.total_responses * 100).round(2)
+
+            # Create a dictionary of region statistics
+            self.region_stats = {}
+            for region in self.region_counts.index:
+                self.region_stats[region] = {
+                    'count': int(self.region_counts[region]),
+                    'percentage': float(self.region_percentages[region])
+                }
+
+        def __repr__(self):
+            output = [f"  Total Responses: {self.total_responses}"]
+            output.append(f"  Unique Regions: {self.unique_regions}")
+            output.append("\n  Region Distribution:")
+
+            # Sort by count descending
+            sorted_regions = sorted(self.region_stats.items(), key=lambda x: x[1]['count'], reverse=True)
+
+            for region, stats in sorted_regions:
+                output.append(f"    {region}: {stats['count']} ({stats['percentage']}%) বিদেশে")
+
+            return "\n".join(output)
+
+    class BinaryColumnAnalysis:
+        def __init__(self, series: pd.Series, column_name: str):
+            clean = series.dropna()
+            self.column_name = column_name
+
+
+            self.total_responses = len(clean)
+            self.positive_responses = int(clean.sum()) if len(clean) > 0 else 0
+            self.positive_percentage = (self.positive_responses / self.total_responses * 100) if self.total_responses > 0 else 0
+
+            # Simplified column name for my sanity
+            self.simple_name = self._simplify_name(column_name)
+
+        def _simplify_name(self, column_name: str):
+            """Extract the key part of the column name for display"""
+            # Remove the common prefix
+            if 'tourist_destination_do_you_prefer_' in column_name:
+                name = column_name.split('tourist_destination_do_you_prefer_')[-1]
+            elif 'activities_are_you_most_interested_in_during_your_trip_' in column_name:
+                name = column_name.split('activities_are_you_most_interested_in_during_your_trip_')[-1]
+            else:
+                name = column_name
+
+            # Simplify name
+            name = name.replace('_', ' ').title()
+            return name
+
+        def __repr__(self):
+            return (
+                f"  Simple Name: {self.simple_name}\n"
+                f"  Total Responses: {self.total_responses}\n"
+                f"  Positive Responses: {self.positive_responses}\n"
+                f"  Positive Percentage: {self.positive_percentage:.2f}%"
+            )
+
+    def analyze_budgets(self):
+        print("\n" + "="*70)
+        print("BUDGET ANALYSIS")
+        print("="*70 + "\n")
+
+        budget_results = {}
+
+        for col in self.budget_cols:
+            if col not in self.df.columns:
+                print(f"Budget column '{col}' not found in dataset.")
+                continue
+
+            try:
+                numeric_series = self.df[col]
+
+                # Filter out NaN values
+                valid_data = numeric_series.dropna()
+
+                if len(valid_data) == 0:
+                    print(f"No valid data for '{col}'")
+                    print("-" * 70)
+                    continue
+
+                result_obj = self.ColumnRelativeLocation(valid_data, col)
+                budget_results[col] = {
+                    'count': result_obj.count,
+                    'mean': result_obj.mean,
+                    'median': result_obj.percentile_50,
+                    'min': result_obj.min,
+                    'max': result_obj.max,
+                    'std': result_obj.std,
+                    'percentiles': {
+                        '25': result_obj.percentile_25,
+                        '50': result_obj.percentile_50,
+                        '75': result_obj.percentile_75
+                    }
+                }
+
+                print(f"Analysis for: {col}")
+                print(result_obj)
+                print("-" * 70)
+
+            except Exception as e:
+                print(f"Error processing column '{col}': {e}")
+                print("-" * 70)
+
+        self.results['budgets'] = budget_results
+
+    def analyze_regions(self):
+        print("\n" + "="*70)
+        print("HOME ADDRESS REGION ANALYSIS")
+        print("="*70 + "\n")
+
+        if self.region_col not in self.df.columns:
+            print(f"Region column '{self.region_col}' not found in dataset.")
+            return
+
+        try:
+            region_series = self.df[self.region_col]
+            result_obj = self.RegionAnalysis(region_series)
+
+            self.results['regions'] = {
+                'total_responses': result_obj.total_responses,
+                'unique_regions': result_obj.unique_regions,
+                'region_stats': result_obj.region_stats
+            }
+
+            print(f"Analysis for: {self.region_col}")
+            print(result_obj)
+            print("-" * 70)
+
+        except Exception as e:
+            print(f"Error processing region column: {e}")
+            print("-" * 70)
+
+    def analyze_destinations(self):
+        print("\n" + "="*70)
+        print("DESTINATION PREFERENCES ANALYSIS")
+        print("="*70 + "\n")
+
+        destination_results = []
+
+        for col in self.destination_cols:
+            if col not in self.df.columns:
+                print(f"Destination column '{col}' not found in dataset.")
+                continue
+
+            try:
+                # Convert to numeric, coercing errors
+                numeric_series = pd.to_numeric(self.df[col], errors='coerce')
+                result_obj = self.BinaryColumnAnalysis(numeric_series, col)
+
+                destination_results.append({
+                    'destination': result_obj.simple_name,
+                    'positive_responses': result_obj.positive_responses,
+                    'total_responses': result_obj.total_responses,
+                    'percentage': result_obj.positive_percentage
+                })
+
+                print(f"Destination: {result_obj.simple_name}")
+                print(result_obj)
+                print("-" * 70)
+
+            except Exception as e:
+                print(f"Error processing column '{col}': {e}")
+                print("-" * 70)
+
+        # Store results
+        self.results['destinations'] = destination_results
+
+        # Print summary
+        self._print_binary_summary(destination_results, "Top 10 Most Popular Destinations")
+
+    def analyze_activities(self):
+        print("\n" + "="*70)
+        print("ACTIVITY PREFERENCES ANALYSIS")
+        print("="*70 + "\n")
+
+        activity_results = []
+
+        for col in self.activity_cols:
+            if col not in self.df.columns:
+                print(f"Activity column '{col}' not found in dataset.")
+                continue
+
+            try:
+                # Convert to numeric, coercing errors
+                numeric_series = pd.to_numeric(self.df[col], errors='coerce')
+                result_obj = self.BinaryColumnAnalysis(numeric_series, col)
+
+                activity_results.append({
+                    'activity': result_obj.simple_name,
+                    'positive_responses': result_obj.positive_responses,
+                    'total_responses': result_obj.total_responses,
+                    'percentage': result_obj.positive_percentage
+                })
+
+                print(f"Activity: {result_obj.simple_name}")
+                print(result_obj)
+                print("-" * 70)
+
+            except Exception as e:
+                print(f"Error processing column '{col}': {e}")
+                print("-" * 70)
+
+        # Store results
+        self.results['activities'] = activity_results
+
+        # Print summary
+        self._print_binary_summary(activity_results, "Top 10 Most Popular Activities")
+
+    def _print_binary_summary(self, results, title):
+        """Print a summary of the top binary results"""
+        if results:
+            # Sort by percentage descending
+            sorted_results = sorted(results, key=lambda x: x['percentage'], reverse=True)
+
+            print("\n" + "="*70)
+            print(f"{title}")
+            print("="*70)
+            print(f"{'Rank':<5} {'Name':<50} {'%':>8}")
+            print("-" * 70)
+
+            for i, item in enumerate(sorted_results[:10], 1):
+                name = item.get('destination', item.get('activity', ''))
+                # Truncate long names
+                if len(name) > 50:
+                    name = name[:47] + "..."
+                print(f"{i:<5} {name:<50} {item['percentage']:>7.2f}%")
+
+
+if __name__ == "__main__":
+    analyzer = DestActRelativeLocation("Transformed_TouristDestinations.csv")
+    results = analyzer()
+
+    print("\n" + "="*70)
+    print("PROGRAMMATIC ACCESS EXAMPLE")
+    print("="*70)
+
+
+    if 'budgets' in results and results['budgets']:
+        print("\nBudget Statistics:")
+        for budget_col, stats in results['budgets'].items():
+            print(f"  {budget_col}:")
+            print(f"    Mean: ₱{stats['mean']:,.2f}")
+            print(f"    Median: ₱{stats['median']:,.2f}")
+            print(f"    Range: ₱{stats['min']:,.2f} - ₱{stats['max']:,.2f}")
+
+    # Region information  if 'regions' in results:
+        print("\nRegion Statistics:")
+        print(f"  Total Respondents: {results['regions']['total_responses']}")
+        print(f"  Unique Regions: {results['regions']['unique_regions']}")
+        top_region = max(results['regions']['region_stats'].items(), key=lambda x: x[1]['count'])
+        print(f"  Most Common Region: {top_region[0]} ({top_region[1]['count']} respondents, {top_region[1]['percentage']}%) বিদেশে")
+
+    # Top destination and activity
+    if results.get('destinations'):
+        print(f"\nTop Destination: {results['destinations'][0]['destination']} ({results['destinations'][0]['percentage']:.2f}%)")
+
+    if results.get('activities'):
+        print(f"Top Activity: {results['activities'][0]['activity']} ({results['activities'][0]['percentage']:.2f}%)")
