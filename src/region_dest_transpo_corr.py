@@ -2,7 +2,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("../Transformed_TouristDestinations.csv")
+df = pd.read_csv("Transformed_TouristDestinations.csv")
 
 destination = [col for col in df.columns if col.startswith("what_specific_phillippine_tourist_destination_do_you_prefer")]
 transport = pd.get_dummies(df['what_is_your_preferred_mode_of_travel_during_your_trip'], prefix='transport')
