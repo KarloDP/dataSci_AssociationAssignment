@@ -114,7 +114,7 @@ df.drop(columns=multi_cols, inplace=True)
 # ----------------------------------------------------------
 # 8. Save cleaned dataset
 # ----------------------------------------------------------
-output_file = "Transformed_TouristDestinations.csv"
+output_file = "../Transformed_TouristDestinations.csv"
 df.to_csv(output_file, index=False)
 
 print("\nProcessing complete.")

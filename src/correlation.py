@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Load dataset
-df = pd.read_csv("Transformed_TouristDestinations.csv")
+df = pd.read_csv("../Transformed_TouristDestinations.csv")
 
 # ----- Correlation (Origin, Destination, Repeat Visitation)------
 

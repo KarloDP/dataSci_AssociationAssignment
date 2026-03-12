@@ -72,7 +72,7 @@ def plot_heatmap(corr_matrix, title):
 def main():
 
     # Load dataset
-    df = pd.read_csv("Transformed_TouristDestinations.csv")
+    df = pd.read_csv("../Transformed_TouristDestinations.csv")
 
     # Simplify column names
     df = simplify_columns(df)

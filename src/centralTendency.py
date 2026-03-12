@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load dataset
-file_path = "Transformed_TouristDestinations.csv"
+file_path = "../Transformed_TouristDestinations.csv"
 df = pd.read_csv(file_path)
 
 print("\nCount of '1' values per column\n")
